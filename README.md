@@ -10,3 +10,9 @@ This is the simplest appraoch from a technical standpoint and if successful, suf
 The task is framed as an binary image classfiication task, with the presence of a Kingfisher being the positive class.
 Contiguous sequences of video frames at a single nesting site were labelled manually by a domain expert, to enable a supervised learning approach.
 We use Tensorflow as the deep learning framework of choice.
+
+Some key challenges expected from observation of the data are:
+
+  - the birds only make up a very small part of the image
+  - in flight, the birds are affected by a lot of motion blur
+  - the background being quite static and a timestamp being present makes overfitting likely
