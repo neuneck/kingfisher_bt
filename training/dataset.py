@@ -14,12 +14,19 @@ if TYPE_CHECKING:
 
 
 def split_dataset_by_folder(
-    dataframe: pd.DataFrame, val_frac: float = 0.1, test_frac: float = 0.1
+    dataframe: pd.DataFrame,
+    val_frac: float = 0.1,
+    test_frac: float = 0.1,
+    only_folders_with_kingfisher=False,
 ) -> pd.DataFrame:
     """Split the dataset into folder-separated sections."""
     work_df = dataframe.copy()
     work_df["folder"] = work_df["image"].apply(os.path.dirname)
-    folders = list(work_df["folder"].unique())
+    if only_folders_with_kingfisher:
+        filtered = work_df.groupby("folder").filter(lambda ser: ser["kingfisher"].any())
+    else:
+        filtered = work_df
+    folders = list(filtered["folder"].unique())
     random.shuffle(folders)
     val_folders = round(len(folders) * val_frac)
     test_folders = round(len(folders) * test_frac)
@@ -39,6 +46,7 @@ def make_dataset(
     image_column: str = "image",
     label_column: str = "kingfisher",
     batch_size: int = 32,
+    rescale_pixels: bool = False,
 ) -> tf.data.Dataset:
     """Make a dataset from the given csv file.
 
@@ -54,6 +62,8 @@ def make_dataset(
         The name of the column containing the relevant binary label
     batch_size
         The size of batches to produce
+    rescale_pixels
+        Whether to scale pixels to [0, 1]. If false, pixels will be in [0, 255]
 
     Returns
     -------
@@ -70,27 +80,40 @@ def make_dataset(
     )
     dataset = dataset.shuffle(buffer_size=10000)
     dataset = dataset.map(
-        _make_image_loader(image_column=image_column, image_size=image_size)
+        _make_image_loader(
+            image_column=image_column,
+            image_size=image_size,
+            rescale_pixels=rescale_pixels,
+        )
     )
     dataset = dataset.batch(batch_size=batch_size)
+    dataset = dataset.map(extractor)
+    dataset = dataset.prefetch(tf.data.AUTOTUNE)
 
-    return dataset.map(extractor)
+    return dataset
 
 
 def _make_image_loader(
-    image_column: str, image_size: tuple[int, int]
+    image_column: str,
+    image_size: tuple[int, int],
+    rescale_pixels=True,
 ) -> Callable[[dict], dict]:
     def _load_image_in_sample(sample):
-        sample[image_column] = _load_image(sample[image_column], image_size)
+        sample[image_column] = _load_image(
+            sample[image_column], image_size, rescale_pixels
+        )
         return sample
 
     return _load_image_in_sample
 
 
-def _load_image(path: str, image_size: tuple[int, int]) -> tf.Tensor:
+def _load_image(
+    path: str, image_size: tuple[int, int], rescale_pixels=True
+) -> tf.Tensor:
     image = tf.io.read_file(path)
     image = tf.io.decode_jpeg(image)
     image = tf.image.convert_image_dtype(image, tf.float32)
     image = tf.image.resize(image, image_size)
-    image /= 255.0
+    if rescale_pixels:
+        image /= 255.0
     return image

@@ -2,3 +2,5 @@ label_by_image.csv
 *.ipynb
 .vscode
 *.pyc
+__pycache__
+checkpoints
