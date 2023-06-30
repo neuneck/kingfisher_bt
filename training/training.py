@@ -21,14 +21,16 @@ def train_model(
     class_weight: Optional[dict] = None,
     warmup=0,
     backbone_layer=1,
+    name_suffix: Optional[str] = None,
 ):
+    metric_names = _get_metric_names(name_suffix)
     if class_weight is None:
         class_weight = {}
     lr_schedule = _make_lr_schedule(lr_plateau, lr_decay)
     checkpointer = tf.keras.callbacks.ModelCheckpoint(
         filepath=checkpoint_path,
         save_best_only=True,
-        monitor="val_precision_at_recall",
+        monitor=metric_names["monitor"],
         mode="max",
         save_weights_only=True,
     )
@@ -36,9 +38,11 @@ def train_model(
         tf.keras.optimizers.experimental.AdamW(learning_rate=initial_lr),
         tf.keras.losses.BinaryCrossentropy(),
         metrics=[
-            tf.keras.metrics.Precision(),
-            tf.keras.metrics.Recall(),
-            tf.keras.metrics.PrecisionAtRecall(0.8),
+            tf.keras.metrics.Precision(name=metric_names["precision"]),
+            tf.keras.metrics.Recall(name=metric_names["recall"]),
+            tf.keras.metrics.PrecisionAtRecall(
+                0.8, name=metric_names["precision_at_recall"]
+            ),
         ],
     )
     logger.info(f"Starting training for {epochs} epochs.")
@@ -81,3 +85,21 @@ def _make_lr_schedule(plateau, decay):
         _get_lr_schedule(plateau, decay)
     )
     return lr_decay
+
+
+def _get_metric_names(name_suffix: Optional[str]) -> dict[str, str | None]:
+    if name_suffix is None:
+        names = {
+            "precision_at_recall": None,
+            "precision": None,
+            "recall": None,
+            "monitor": "val_precision_at_recall",
+        }
+    else:
+        names = {
+            "precision_at_recall": f"precision_at_recall_{name_suffix}",
+            "precision": f"precision_{name_suffix}",
+            "recall": f"recall_{name_suffix}",
+            "monitor": f"val_precision_at_recall_{name_suffix}",
+        }
+    return names

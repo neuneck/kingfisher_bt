@@ -88,7 +88,7 @@ def _get_datasets_from_folds(dataset, experiment):
     return tf_datasets
 
 
-def _run_experiment(model, tf_data, experiment_path):
+def _run_experiment(model, tf_data, experiment_path, experiment_index):
     """Run the experiment with the given data assignments."""
     ckpt_path = os.path.join(experiment_path, "best_checkpoint.hdf5")
     final_model = train_model(
@@ -102,6 +102,7 @@ def _run_experiment(model, tf_data, experiment_path):
         epochs=15,
         warmup=4,
         backbone_layer=1,
+        name_suffix=experiment_index,
     )
     final_model.save_weights(os.path.join(experiment_path, "final_model.hdf5"))
 
@@ -160,7 +161,7 @@ def run_crossvalidation(
         os.mkdir(experiment_path)
         model = _get_model(dataset, experiment["train"])
         tf_data = _get_datasets_from_folds(dataset_with_folds, experiment)
-        test_stats = _run_experiment(model, tf_data, experiment_path)
+        test_stats = _run_experiment(model, tf_data, experiment_path, idx)
         result = {
             "experiment_number": idx,
             "train_folds": str(experiment["train"]),
