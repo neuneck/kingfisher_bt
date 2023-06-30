@@ -4,3 +4,4 @@ label_by_image.csv
 *.pyc
 __pycache__
 checkpoints
+results

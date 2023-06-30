@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import tensorflow as tf
 
@@ -47,6 +47,7 @@ def make_dataset(
     label_column: str = "kingfisher",
     batch_size: int = 32,
     rescale_pixels: bool = False,
+    roi: Optional[tuple[int, int, int, int]] = None,
 ) -> tf.data.Dataset:
     """Make a dataset from the given csv file.
 
@@ -64,6 +65,9 @@ def make_dataset(
         The size of batches to produce
     rescale_pixels
         Whether to scale pixels to [0, 1]. If false, pixels will be in [0, 255]
+    roi
+        A region of interest to crop from pictures, if given. Coordinates are
+            [top, bottom, left, right]
 
     Returns
     -------
@@ -84,6 +88,7 @@ def make_dataset(
             image_column=image_column,
             image_size=image_size,
             rescale_pixels=rescale_pixels,
+            roi=roi,
         )
     )
     dataset = dataset.batch(batch_size=batch_size)
@@ -94,13 +99,11 @@ def make_dataset(
 
 
 def _make_image_loader(
-    image_column: str,
-    image_size: tuple[int, int],
-    rescale_pixels=True,
+    image_column: str, image_size: tuple[int, int], rescale_pixels=True, roi=None
 ) -> Callable[[dict], dict]:
     def _load_image_in_sample(sample):
         sample[image_column] = _load_image(
-            sample[image_column], image_size, rescale_pixels
+            sample[image_column], image_size, rescale_pixels, roi
         )
         return sample
 
@@ -108,11 +111,17 @@ def _make_image_loader(
 
 
 def _load_image(
-    path: str, image_size: tuple[int, int], rescale_pixels=True
+    path: str, image_size: tuple[int, int], rescale_pixels=True, roi=None
 ) -> tf.Tensor:
     image = tf.io.read_file(path)
     image = tf.io.decode_jpeg(image)
     image = tf.image.convert_image_dtype(image, tf.float32)
+    if roi is None:
+        # Crop out the timestamp
+        image = image[20:, :, :]
+    else:
+        image = image[roi[0] : roi[1], roi[2] : roi[3], :]
+
     image = tf.image.resize(image, image_size)
     if rescale_pixels:
         image /= 255.0

@@ -1,9 +1,36 @@
 """Central file defining various models to try."""
+from __future__ import annotations
+
+from typing import Optional
 
 import tensorflow as tf
 
 
-def make_efficientnet(output_bias=None, input_shape=(224, 224, 3), dropout=0):
+def make_efficientnet(
+    output_bias: Optional[float] = None,
+    input_shape: tuple[int, int, int] = (224, 224, 3),
+    dropout: float = 0,
+) -> tf.keras.models.Model:
+    """Create a new EfficientNetV2B0 model for binary image classification.
+
+    The model consists of an ImageNet-pretrained Efficientnet backbone, with global
+    pooling a single binary classification layer.
+
+    Parameters
+    ----------
+    output_bias
+        Initial value for the bias of the classfication layer.
+    input_shape
+        The input shape to set for this model. The default corresponds to the setting
+        used for pretraining the EfficientNet backbone.
+    dropout
+        The rate of dropout to apply prior to classification during training.
+
+    Returns
+    -------
+    An initialized efficientnet model.
+
+    """
     backbone = tf.keras.applications.EfficientNetV2B0(
         include_top=False, input_shape=input_shape
     )
@@ -22,7 +49,31 @@ def make_efficientnet(output_bias=None, input_shape=(224, 224, 3), dropout=0):
     return model
 
 
-def make_inceptionnet(output_bias=None, input_shape=(299, 299, 3), dropout=0):
+def make_inceptionnet(
+    output_bias: Optional[float] = None,
+    input_shape: tuple[int, int, int] = (299, 299, 3),
+    dropout: float = 0,
+) -> tf.keras.models.Model:
+    """Create a new InceptionV3 model for binary image classification.
+
+    The model consists of an ImageNet-pretrained inception net backbone, with global
+    pooling a single binary classification layer.
+
+    Parameters
+    ----------
+    output_bias
+        Initial value for the bias of the classfication layer.
+    input_shape
+        The input shape to set for this model. The default corresponds to the setting
+        used for pretraining the InceptionV3 backbone.
+    dropout
+        The rate of dropout to apply prior to classification during training.
+
+    Returns
+    -------
+    An initialized InceptionNet model.
+
+    """
     backbone = tf.keras.applications.InceptionV3(
         include_top=False, input_shape=input_shape
     )

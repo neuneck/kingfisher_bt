@@ -1,0 +1,37 @@
+#! python
+"""Run a cross-validation on the kingfisher data."""
+
+import os
+from argparse import ArgumentParser
+
+import pandas as pd
+
+from training.cross_validation import filter_dataset, run_crossvalidation
+
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--label-path",
+        type=str,
+        help="Path to the csv with labels",
+        default="label_by_image.csv",
+        required=False,
+    )
+    parser.add_argument("-k", type=int, help="The number of experiments to run")
+    parser.add_argument(
+        "-n", type=int, help="The number of folds to split the data into."
+    )
+    parser.add_argument(
+        "--result-path",
+        type=str,
+        help="Path to store the outputs in",
+        default="results",
+        required=False,
+    )
+    args = parser.parse_args()
+
+    dataset = pd.read_csv(args.label_path)
+    dataset = filter_dataset(dataset)
+    os.makedirs(args.result_path)
+
+    run_crossvalidation(dataset, k=args.k, n_folds=args.n, report_path=args.result_path)
