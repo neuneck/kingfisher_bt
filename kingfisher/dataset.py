@@ -48,6 +48,7 @@ def make_dataset(
     batch_size: int = 32,
     rescale_pixels: bool = False,
     roi: Optional[tuple[int, int, int, int]] = None,
+    shuffle: bool = True,
 ) -> tf.data.Dataset:
     """Make a dataset from the given csv file.
 
@@ -82,7 +83,8 @@ def make_dataset(
     dataset = tf.data.Dataset.from_tensor_slices(
         dict(dataframe[[image_column, label_column]])
     )
-    dataset = dataset.shuffle(buffer_size=10000)
+    if shuffle:
+        dataset = dataset.shuffle(buffer_size=10000)
     dataset = dataset.map(
         _make_image_loader(
             image_column=image_column,

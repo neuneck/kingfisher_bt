@@ -10,6 +10,7 @@ def make_efficientnet(
     output_bias: Optional[float] = None,
     input_shape: tuple[int, int, int] = (224, 224, 3),
     dropout: float = 0,
+    weights: Optional[str] = None,
 ) -> tf.keras.models.Model:
     """Create a new EfficientNetV2B0 model for binary image classification.
 
@@ -25,6 +26,8 @@ def make_efficientnet(
         used for pretraining the EfficientNet backbone.
     dropout
         The rate of dropout to apply prior to classification during training.
+    weights
+        A path to weights to load. If set to None, default initialization will be used.
 
     Returns
     -------
@@ -46,6 +49,8 @@ def make_efficientnet(
         1, activation="sigmoid", bias_initializer=output_bias
     )(feats)
     model = tf.keras.models.Model(inputs=inputs, outputs=output)
+    if weights is not None:
+        model.load_weights(weights)
     return model
 
 
@@ -53,6 +58,7 @@ def make_inceptionnet(
     output_bias: Optional[float] = None,
     input_shape: tuple[int, int, int] = (299, 299, 3),
     dropout: float = 0,
+    weights: Optional[str] = None,
 ) -> tf.keras.models.Model:
     """Create a new InceptionV3 model for binary image classification.
 
@@ -68,6 +74,8 @@ def make_inceptionnet(
         used for pretraining the InceptionV3 backbone.
     dropout
         The rate of dropout to apply prior to classification during training.
+    weights
+        A path to weights to load. If set to None, default initialization will be used.
 
     Returns
     -------
@@ -89,4 +97,6 @@ def make_inceptionnet(
         1, activation="sigmoid", bias_initializer=output_bias
     )(feats)
     model = tf.keras.models.Model(inputs=inputs, outputs=output)
+    if weights is not None:
+        model.load_weights(weights)
     return model

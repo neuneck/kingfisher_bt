@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 
 import pandas as pd
 
-from training.cross_validation import filter_dataset, run_crossvalidation
+from kingfisher.training.cross_validation import filter_dataset, run_crossvalidation
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -28,10 +28,23 @@ if __name__ == "__main__":
         default="results",
         required=False,
     )
+    parser.add_argument(
+        "--fixed-test-fold",
+        type=int,
+        help="The fixed index of the fold to use for the test set.",
+        required=False,
+        default=None,
+    )
     args = parser.parse_args()
 
     dataset = pd.read_csv(args.label_path)
     dataset = filter_dataset(dataset)
     os.makedirs(args.result_path)
 
-    run_crossvalidation(dataset, k=args.k, n_folds=args.n, report_path=args.result_path)
+    run_crossvalidation(
+        dataset,
+        k=args.k,
+        n_folds=args.n,
+        report_path=args.result_path,
+        fixed_test_folds=args.fixed_test_fold,
+    )

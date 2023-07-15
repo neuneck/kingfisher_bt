@@ -2,13 +2,15 @@
 
 import os
 import random
+from collections.abc import Iterable
 from logging import getLogger
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
 
-from .dataset import make_dataset
-from .models import make_efficientnet
+from ..dataset import make_dataset
+from ..models import make_efficientnet
 from .training import train_model
 
 logger = getLogger()
@@ -55,18 +57,33 @@ def filter_dataset(
     return work_df
 
 
-def _assign_folds_to_experiments(k, n_folds):
+def _assign_folds_to_experiments(k, n_folds, fixed_test_folds=None):
     """Assign folds to train, val and test datasets."""
     experiments = []
     list_of_folds = list(range(n_folds))
+    if fixed_test_folds is not None:
+        if not isinstance(fixed_test_folds, Iterable):
+            fixed_test_folds = [fixed_test_folds]
+        test = set(fixed_test_folds)
+        list_of_folds = list(set(list_of_folds) - test)
+        train_idx = n_folds - len(test) - 1
+        val_idx = -1
+        test_idx = None
+    else:
+        train_idx = n_folds - 2
+        val_idx = -2
+        test_idx = -1
+
     while len(experiments) < k:
         random.shuffle(list_of_folds)
-        train = set(list_of_folds[: n_folds - 2])
-        val = set([list_of_folds[-2]])
-        test = set([list_of_folds[-1]])
+        train = set(list_of_folds[0:train_idx])
+        val = set([list_of_folds[val_idx]])
+        if test_idx is not None:
+            test = set([list_of_folds[test_idx]])
         experiment = {"train": train, "val": val, "test": test}
         if experiment not in experiments:
             experiments.append(experiment)
+
     return experiments
 
 
@@ -127,7 +144,11 @@ def _get_model(dataset, train_folds, label_column="kingfisher"):
 
 
 def run_crossvalidation(
-    dataset: pd.DataFrame, k: int, n_folds: int, report_path: str
+    dataset: pd.DataFrame,
+    k: int,
+    n_folds: int,
+    report_path: str,
+    fixed_test_folds: Optional[Union[int, list[int]]],
 ) -> None:
     """Run k-fold cross validation.
 
@@ -151,7 +172,7 @@ def run_crossvalidation(
         Path to the folder to use for results.
     """
     output_path = os.path.join(report_path, "results.csv")
-    experiments = _assign_folds_to_experiments(k, n_folds)
+    experiments = _assign_folds_to_experiments(k, n_folds, fixed_test_folds)
     dataset_with_folds = _assign_data_to_folds(dataset, n_folds)
     dataset_with_folds.to_csv(os.path.join(report_path, "dataset.csv"))
     results = []
