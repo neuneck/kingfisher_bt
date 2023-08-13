@@ -55,11 +55,24 @@ def run_data(folder_path):
     return folder_path, df_result
 
 
+def filter_existing(list_of_folders):
+    to_do = []
+    for folder in list_of_folders:
+        if not os.path.isfile(get_output_path(folder)):
+            to_do.append(folder)
+    n_tot = len(list_of_folders)
+    n_done = n_tot - len(to_do)
+    print(f"Found {n_done} existing outputs. Continuing with {len(to_do)} tasks.")
+    return to_do, n_tot, n_done
+
+
 if __name__ == "__main__":
     all_folders = glob.glob("F:/frame_times/*.csv")
 
+    all_folders, n_total, n_done = filter_existing(all_folders)
+
     with ProcessPoolExecutor(max_workers=2, initializer=set_up_ensemble) as ppe, \
-          tqdm.tqdm(total=len(all_folders)) as pbar:
+          tqdm.tqdm(total=n_total, initial=n_done, desc="Processing folders") as pbar:
        futs = [ppe.submit(run_data, folder) for folder in all_folders]
        for this_fut in as_completed(futs):
            folder_path, df_result = this_fut.result()
